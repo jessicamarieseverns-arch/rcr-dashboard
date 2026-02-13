@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RCR Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f7fafc;
+        }
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 16px 24px;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .navbar h1 { font-size: 24px; }
+        .user-info { display: flex; align-items: center; gap: 16px; }
+        .user-name { display: flex; flex-direction: column; align-items: flex-end; }
+        .user-name .name { font-weight: 600; }
+        .user-name .email { font-size: 12px; opacity: 0.9; }
+        .btn-logout {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        .btn-logout:hover { background: rgba(255, 255, 255, 0.3); }
+        .container { max-width: 1200px; margin: 32px auto; padding: 0 24px; }
+        .welcome-card {
+            background: white;
+            border-radius: 12px;
+            padding: 32px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 24px;
+        }
+        .welcome-card h2 { color: #2d3748; margin-bottom: 8px; }
+        .welcome-card p { color: #718096; }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease;
+        }
+        .stat-card:hover { transform: translateY(-4px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); }
+        .stat-card h3 { color: #718096; font-size: 14px; font-weight: 500; margin-bottom: 8px; }
+        .stat-card .value { font-size: 32px; font-weight: 700; color: #2d3748; }
+        .stat-card.purple { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .stat-card.purple h3, .stat-card.purple .value { color: white; }
+        .loading { text-align: center; padding: 40px; color: #718096; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <h1>RCR Dashboard</h1>
+        <div class="user-info">
+            <div class="user-name">
+                <span class="name" id="userName">Loading...</span>
+                <span class="email" id="userEmail">Loading...</span>
+            </div>
+            <button class="btn-logout" onclick="logout()">Logout</button>
+        </div>
+    </nav>
+    <div class="container">
+        <div class="welcome-card">
+            <h2>Welcome, <span id="welcomeName">User</span>!</h2>
+            <p>You have successfully logged in. This is your personal dashboard with real-time data.</p>
+        </div>
+        <div class="stats-grid" id="statsGrid">
+            <div class="loading">Loading statistics...</div>
+        </div>
+    </div>
+    <script>
+        async function loadUserData() {
+            try {
+                const response = await fetch('/api/user');
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('userEmail').textContent = data.email;
+                    document.getElementById('userName').textContent = data.name || 'User';
+                    document.getElementById('welcomeName').textContent = data.name || data.email.split('@')[0];
+                } else {
+                    window.location.href = '/';
+                }
+            } catch (error) {
+                console.error('Error loading user data:', error);
+                window.location.href = '/';
+            }
+        }
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/stats');
+                if (response.ok) {
+                    const data = await response.json();
+                    const statsGrid = document.getElementById('statsGrid');
+                    statsGrid.innerHTML = `
+                        <div class="stat-card purple">
+                            <h3>Total Users</h3>
+                            <div class="value">${data.totalUsers.toLocaleString()}</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Active Sessions</h3>
+                            <div class="value">${data.activeSessions}</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Revenue</h3>
+                            <div class="value">$${(data.revenue / 1000).toFixed(1)}K</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Growth</h3>
+                            <div class="value">+${data.growth}%</div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+                const statsGrid = document.getElementById('statsGrid');
+                statsGrid.innerHTML = '<div class="loading">Failed to load statistics</div>';
+            }
+        }
+        async function logout() {
+            try {
+                await fetch('/api/logout', { method: 'POST' });
+                window.location.href = '/';
+            } catch (error) {
+                alert('Logout failed');
+            }
+        }
+        loadUserData();
+        loadStats();
+    </script>
+</body>
+</html>
